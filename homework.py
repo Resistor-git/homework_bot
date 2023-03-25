@@ -2,7 +2,6 @@ import os
 import time
 import requests
 from typing import Dict
-from pprint import pprint
 
 import telegram
 from dotenv import load_dotenv
@@ -35,7 +34,13 @@ def check_tokens():
 
 
 def send_message(bot, message):
-    ...
+    try:
+        bot.send_message(
+            chat_id=TELEGRAM_CHAT_ID,
+            text=message)
+    except Exception as error:
+        print(error)
+        pass
 
 
 def get_api_answer(timestamp):
@@ -73,20 +78,23 @@ def parse_status(homework):
 
 
 def main():
-    """Основная логика работы бота."""
-    ...
-
+    """
+    Ask Практикум.Домашка for status of homework (every 10 mins by default).
+    If status has changed from the last request - sends a message in
+    telegram.
+    """
     bot: telegram.Bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp: int = int(time.time())
-    ...
-    # print(get_api_answer(DEBUG_DATE))
-    # check_response(get_api_answer(timestamp))
-    # print(parse_status(get_api_answer(timestamp)))
+    message = parse_status(get_api_answer(timestamp))
+    last_message = ''
 
     while True:
         try:
-
-            ...
+            if message != last_message:
+                send_message(bot, message)
+                last_message = message
+                time.sleep(5)
+                print('fff')
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
