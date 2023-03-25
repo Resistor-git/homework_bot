@@ -6,6 +6,8 @@ import telegram
 
 from dotenv import load_dotenv
 
+from exceptions import EnvironmentVariableException
+
 load_dotenv()
 
 PRACTICUM_TOKEN: str = os.getenv('PRACTICUM_TOKEN')
@@ -24,7 +26,10 @@ HOMEWORK_VERDICTS: Dict[str, str] = {
 
 
 def check_tokens():
-    ...
+    if not (PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID):
+        raise EnvironmentVariableException(
+            'One or more of environment variables missing.'
+        )
 
 
 def send_message(bot, message):
