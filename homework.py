@@ -1,9 +1,10 @@
 import os
 import time
+import requests
 from typing import Dict
+from pprint import pprint
 
 import telegram
-
 from dotenv import load_dotenv
 
 from exceptions import EnvironmentVariableException
@@ -16,8 +17,6 @@ TELEGRAM_CHAT_ID: str = os.getenv('TELEGRAM_CHAT_ID')
 RETRY_PERIOD: int = 600
 ENDPOINT: str = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS: str = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-
-
 HOMEWORK_VERDICTS: Dict[str, str] = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
     'reviewing': 'Работа взята на проверку ревьюером.',
@@ -37,7 +36,10 @@ def send_message(bot, message):
 
 
 def get_api_answer(timestamp):
-    ...
+    """Get info about homeworks since the date in the timestamp."""
+    date = {'from_date': timestamp}
+    response = requests.get(ENDPOINT, headers=HEADERS, params=date)
+    return response
 
 
 def check_response(response):
@@ -52,12 +54,10 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-
     ...
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
-
     ...
 
     while True:
