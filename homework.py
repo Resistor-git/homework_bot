@@ -7,7 +7,7 @@ from pprint import pprint
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import EnvironmentVariableException
+from exceptions import EnvironmentVariableException, ResponseException
 
 load_dotenv()
 
@@ -37,13 +37,21 @@ def send_message(bot, message):
 
 def get_api_answer(timestamp):
     """Get info about homeworks since the date in the timestamp."""
-    date = {'from_date': timestamp}
-    response = requests.get(ENDPOINT, headers=HEADERS, params=date)
+    date: Dict[str, int] = {'from_date': timestamp}
+    response: requests.models.Response = requests.get(
+        ENDPOINT,
+        headers=HEADERS,
+        params=date
+    )
     return response
 
 
 def check_response(response):
-    ...
+    """Ensure that response from Практикум.Домашка has nesessary info."""
+    if not ('current_date' and 'homeworks' in response.keys()):
+        raise ResponseException(
+            'Got unexpected response from Практикум.Домашка'
+        )
 
 
 def parse_status(homework):
@@ -56,9 +64,11 @@ def main():
     """Основная логика работы бота."""
     ...
 
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = int(time.time())
+    bot: telegram.Bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    timestamp: int = int(time.time())
     ...
+    get_api_answer(timestamp)
+    # check_response(get_api_answer(timestamp))
 
     while True:
         try:
