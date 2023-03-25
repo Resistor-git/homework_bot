@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 from exceptions import EnvironmentVariableException, ResponseException
 
 load_dotenv()
+# !!!!!!!!!!!!!!!!
+DEBUG_DATE = int(time.time()) - (60 * 60 * 24 * 20)
+# !!!!!!!!!!!!!!!!!!!
 
 PRACTICUM_TOKEN: str = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN: str = os.getenv('TELEGRAM_TOKEN')
@@ -43,7 +46,7 @@ def get_api_answer(timestamp):
         headers=HEADERS,
         params=date
     )
-    return response
+    return response.json()
 
 
 def check_response(response):
@@ -55,9 +58,18 @@ def check_response(response):
 
 
 def parse_status(homework):
-    ...
-
-    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+    """Analyses the response from Практикум.Домашка."""
+    try:
+        last_homework: Dict = homework['homeworks'][0]
+        homework_name: str = last_homework['homework_name']
+        status: str = last_homework['status']
+        verdict = HOMEWORK_VERDICTS[status]
+        return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+    except IndexError:
+        print("""Couldn't find the homework.""")
+    except Exception as error:
+        print('Something went wrong during parsing of the response.\n'
+              f'{error}')
 
 
 def main():
@@ -67,8 +79,9 @@ def main():
     bot: telegram.Bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp: int = int(time.time())
     ...
-    get_api_answer(timestamp)
+    # print(get_api_answer(DEBUG_DATE))
     # check_response(get_api_answer(timestamp))
+    # print(parse_status(get_api_answer(timestamp)))
 
     while True:
         try:
