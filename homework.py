@@ -62,7 +62,7 @@ def send_message(bot, message):
         bot.send_message(
             chat_id=TELEGRAM_CHAT_ID,
             text=message)
-        logger.debug('Message sent')
+        logger.debug(f'Message "{message}" sent in chat {TELEGRAM_CHAT_ID}')
     except Exception:
         logger.exception("Couldn't send a message in telegram.")
 
@@ -76,10 +76,11 @@ def get_api_answer(timestamp):
         headers=HEADERS,
         params=date
     )
-    if response.status_code == 404:
-        logger.exception('Endpoint unavailable')
-    elif response.status_code != 200:
+    if response.status_code != 200:
         logger.exception('Endpoint returned unexpected status code')
+        raise ResponseError(
+            f'Unexpected status code in response: {response.status_code}'
+        )
     return response.json()
 
 
@@ -145,14 +146,20 @@ def main():
             if message != last_message:
                 send_message(bot, message)
                 last_message = message
-                time.sleep(5)
             else:
                 logger.debug('Homework status did not change')
-        except ResponseError:
+            time.sleep(RETRY_PERIOD)
+        except ResponseError as error:
+            bug_message = bot.send_message(
+                chat_id=TELEGRAM_CHAT_ID,
+                text=f'Error: {error}'
+            )
+            logger.debug(f'Bot sent message: "{bug_message.text}"')
             time.sleep(RETRY_PERIOD)
         except Exception as error:
+            logger.exception(f'Something went wrong: {error}')
             message = f'Сбой в работе программы: {error}'
-            ...
+            time.sleep(RETRY_PERIOD)
         ...
 
 
