@@ -71,17 +71,20 @@ def get_api_answer(timestamp):
     """Get info about homeworks since the date in the timestamp."""
     logger.debug('get_api_answer started')
     date: Dict[str, int] = {'from_date': timestamp}
-    response: requests.models.Response = requests.get(
-        ENDPOINT,
-        headers=HEADERS,
-        params=date
-    )
-    if response.status_code != 200:
-        logger.exception('Endpoint returned unexpected status code')
-        raise ResponseError(
-            f'Unexpected status code in response: {response.status_code}'
+    try:
+        response: requests.models.Response = requests.get(
+            ENDPOINT,
+            headers=HEADERS,
+            params=date
         )
-    return response.json()
+        if response.status_code != 200:
+            logger.exception('Endpoint returned unexpected status code')
+            raise ResponseError(
+                f'Unexpected status code in response: {response.status_code}'
+            )
+        return response.json()
+    except requests.exceptions.RequestException:
+        logger.exception('Unexpected answer from API.')
 
 
 def check_response(response):
@@ -115,10 +118,16 @@ def parse_status(homework):
         return f'Изменился статус проверки работы "{homework_name}". {verdict}'
     except IndexError:
         logger.exception("Couldn't find the homework.")
+        raise IndexError(
+            "Couldn't find the homework."
+        )
     except KeyError as error:
         logger.exception(
             'Unexpected key. Probably unexpected status of the homework.\n'
             f'{error}')
+        raise KeyError(
+            'Unexpected key. Probably unexpected status of the homework.'
+        )
     except Exception as error:
         logger.exception(
             'Something went wrong during parsing of the response.\n'
@@ -149,7 +158,10 @@ def main():
             else:
                 logger.debug('Homework status did not change')
             time.sleep(RETRY_PERIOD)
-        except ResponseError as error:
+        except (ResponseError,
+                requests.exceptions.RequestException,
+                IndexError,
+                KeyError) as error:
             bug_message = bot.send_message(
                 chat_id=TELEGRAM_CHAT_ID,
                 text=f'Error: {error}'
@@ -160,7 +172,6 @@ def main():
             logger.exception(f'Something went wrong: {error}')
             message = f'Сбой в работе программы: {error}'
             time.sleep(RETRY_PERIOD)
-        ...
 
 
 if __name__ == '__main__':
