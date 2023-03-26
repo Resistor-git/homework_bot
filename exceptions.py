@@ -1,13 +1,13 @@
 """Custom exceptions."""
 
 
-class EnvironmentVariableException(Exception):
+class EnvironmentVariableError(Exception):
     """One of the nesessary environmental variables is missing."""
 
     pass
 
 
-class ResponseException(Exception):
+class ResponseError(Exception):
     """Got unexpected response from Практикум.Домашка."""
 
     pass
