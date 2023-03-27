@@ -1,3 +1,10 @@
+"""
+Telegram bot 'practicum_review_status_bot'.
+
+Checks the status of homework code review and sends a message in telegram if
+status has changed.
+"""
+
 import os
 import time
 import requests
@@ -11,9 +18,6 @@ from dotenv import load_dotenv
 from exceptions import EnvironmentVariableError, ResponseError
 
 load_dotenv()
-# !!!!!!!!!!!!!!!!
-DEBUG_DATE = int(time.time()) - (60 * 60 * 24 * 20)
-# !!!!!!!!!!!!!!!!!!!
 
 PRACTICUM_TOKEN: str = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN: str = os.getenv('TELEGRAM_TOKEN')
@@ -130,27 +134,16 @@ def parse_status(homework):
     """Analyses the response from Практикум.Домашка."""
     logger.debug('parse_status started')
     try:
-        last_homework: Dict = homework['homeworks'][0]
-        homework_name: str = last_homework['homework_name']
-        status: str = last_homework['status']
+        homework_name: str = homework['homework_name']
+        status: str = homework['status']
         verdict = HOMEWORK_VERDICTS[status]
         return f'Изменился статус проверки работы "{homework_name}". {verdict}'
-    except IndexError:
-        logger.exception("Couldn't find the homework.")
-        raise IndexError(
-            "Couldn't find the homework."
-        )
     except KeyError as error:
         logger.exception(
             'Unexpected key. Probably unexpected status of the homework.\n'
             f'{error}')
         raise KeyError(
             'Unexpected key. Probably unexpected status of the homework.'
-        )
-    except Exception as error:
-        logger.exception(
-            'Something went wrong during parsing of the response.\n'
-            f'{error}'
         )
 
 
@@ -171,39 +164,37 @@ def main():
         try:
             api_answer = get_api_answer(timestamp)
             check_response(api_answer)
-            message = parse_status(api_answer)
+            message = parse_status(api_answer['homeworks'][0])
             if message != last_message:
                 send_message(bot, message)
                 last_message = message
             else:
                 logger.debug('Homework status did not change')
-            # time.sleep(RETRY_PERIOD)
+            time.sleep(RETRY_PERIOD)
         except (ResponseError,
                 requests.exceptions.RequestException,
                 IndexError,
                 KeyError,
                 TypeError) as error:
-            message = f'Error: {error}'
-            if last_error_message != message:
-                error_message = bot.send_message(
+            error_message = f'Program failure: {error}'
+            if last_error_message != error_message:
+                bot.send_message(
                     chat_id=TELEGRAM_CHAT_ID,
-                    text=message
+                    text=error_message
                 )
-                last_error_message = message
-            logger.debug(f'Bot sent message: "{error_message.text}"')
-            last_error_message = error_message.text
-            # time.sleep(5)
+            logger.debug(f'Bot sent message: "{error_message}"')
+            last_error_message = error_message
+            time.sleep(RETRY_PERIOD)
         except Exception as error:
             logger.exception(f'Something went wrong: {error}')
-            message = f'Сбой в работе программы: {error}'
-            if last_error_message != message:
-                error_message = bot.send_message(
+            error_message = f'Program failure: {error}'
+            if last_error_message != error_message:
+                bot.send_message(
                     chat_id=TELEGRAM_CHAT_ID,
-                    text=message
+                    text=error_message
                 )
-                last_error_message = message
-            # time.sleep(RETRY_PERIOD)
-        finally:
+                logger.debug(f'Bot sent message: "{error_message}"')
+                last_error_message = error_message
             time.sleep(RETRY_PERIOD)
 
 
