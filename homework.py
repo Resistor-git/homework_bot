@@ -93,12 +93,30 @@ def check_response(response):
     and there is a least one homerwork.
     """
     logger.debug('check_response started')
-    if not ('current_date' and 'homeworks' in response.keys()):
+    if not isinstance(response, dict):
+        logger.exception(
+            'Got unexpected response from Практикум.Домашка. '
+            'Response in not dict.'
+        )
+        raise TypeError(
+            'Got unexpected response from Практикум.Домашка. '
+            'Response in not dict.'
+        )
+    elif not ('current_date' and 'homeworks' in response.keys()):
         logger.exception(
             'No information about current date and homeworks in API response'
         )
         raise ResponseError(
             'Got unexpected response from Практикум.Домашка'
+        )
+    elif not isinstance(response['homeworks'], list):
+        logger.exception(
+            'Got unexpected response from Практикум.Домашка. '
+            'Homeworks should be a list.'
+        )
+        raise TypeError(
+            'Got unexpected response from Практикум.Домашка. '
+            'Homeworks should be a list.'
         )
     elif len(response['homeworks']) < 1:
         logger.exception('No homeworks found in the API response')
@@ -145,7 +163,8 @@ def main():
     check_tokens()
     bot: telegram.Bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp: int = int(time.time())
-    last_message = ''
+    last_message: str = ''
+    last_error_message: str = ''
 
     while True:
         try:
@@ -161,16 +180,27 @@ def main():
         except (ResponseError,
                 requests.exceptions.RequestException,
                 IndexError,
-                KeyError) as error:
-            bug_message = bot.send_message(
-                chat_id=TELEGRAM_CHAT_ID,
-                text=f'Error: {error}'
-            )
-            logger.debug(f'Bot sent message: "{bug_message.text}"')
-            time.sleep(RETRY_PERIOD)
+                KeyError,
+                TypeError) as error:
+            message = f'Error: {error}'
+            if last_error_message != message:
+                error_message = bot.send_message(
+                    chat_id=TELEGRAM_CHAT_ID,
+                    text=message
+                )
+                last_error_message = message
+            logger.debug(f'Bot sent message: "{error_message.text}"')
+            last_error_message = error_message.text
+            time.sleep(5)
         except Exception as error:
             logger.exception(f'Something went wrong: {error}')
             message = f'Сбой в работе программы: {error}'
+            if last_error_message != message:
+                error_message = bot.send_message(
+                    chat_id=TELEGRAM_CHAT_ID,
+                    text=message
+                )
+                last_error_message = message
             time.sleep(RETRY_PERIOD)
 
 
