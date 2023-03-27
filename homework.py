@@ -2,6 +2,7 @@ import os
 import time
 import requests
 import logging
+from http import HTTPStatus
 from typing import Dict
 
 import telegram
@@ -77,7 +78,7 @@ def get_api_answer(timestamp):
             headers=HEADERS,
             params=date
         )
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             logger.exception('Endpoint returned unexpected status code')
             raise ResponseError(
                 f'Unexpected status code in response: {response.status_code}'
@@ -176,7 +177,7 @@ def main():
                 last_message = message
             else:
                 logger.debug('Homework status did not change')
-            time.sleep(RETRY_PERIOD)
+            # time.sleep(RETRY_PERIOD)
         except (ResponseError,
                 requests.exceptions.RequestException,
                 IndexError,
@@ -191,7 +192,7 @@ def main():
                 last_error_message = message
             logger.debug(f'Bot sent message: "{error_message.text}"')
             last_error_message = error_message.text
-            time.sleep(5)
+            # time.sleep(5)
         except Exception as error:
             logger.exception(f'Something went wrong: {error}')
             message = f'Сбой в работе программы: {error}'
@@ -201,6 +202,8 @@ def main():
                     text=message
                 )
                 last_error_message = message
+            # time.sleep(RETRY_PERIOD)
+        finally:
             time.sleep(RETRY_PERIOD)
 
 
