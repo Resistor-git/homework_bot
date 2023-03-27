@@ -93,10 +93,7 @@ def get_api_answer(timestamp):
 
 
 def check_response(response):
-    """
-    Ensure that response from Практикум.Домашка has nesessary info
-    and there is a least one homerwork.
-    """
+    """Ensure that response from Практикум.Домашка has nesessary info."""
     logger.debug('check_response started')
     if not isinstance(response, dict):
         logger.exception(
