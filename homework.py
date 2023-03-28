@@ -98,11 +98,11 @@ def check_response(response):
     if not isinstance(response, dict):
         logger.exception(
             'Got unexpected response from Практикум.Домашка. '
-            'Response in not dict.'
+            'Response is not dict.'
         )
         raise TypeError(
             'Got unexpected response from Практикум.Домашка. '
-            'Response in not dict.'
+            'Response is not dict.'
         )
     elif not ('current_date' and 'homeworks' in response.keys()):
         logger.exception(
