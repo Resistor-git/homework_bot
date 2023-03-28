@@ -31,14 +31,14 @@ HOMEWORK_VERDICTS: Dict[str, str] = {
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s [%(levelname)s] - %(message)s'
-)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
+# handler = logging.StreamHandler()
+# formatter = logging.Formatter(
+#     '%(asctime)s [%(levelname)s] - %(message)s'
+# )
+# handler.setFormatter(formatter)
+# logger.addHandler(handler)
 
 
 def check_tokens():
@@ -70,6 +70,7 @@ def send_message(bot, message):
         logger.debug(f'Message "{message}" sent in chat {TELEGRAM_CHAT_ID}')
     except Exception:
         logger.exception("Couldn't send a message in telegram.")
+        raise Exception
 
 
 def get_api_answer(timestamp):
@@ -167,7 +168,6 @@ def main():
                 last_message = message
             else:
                 logger.debug('Homework status did not change')
-            time.sleep(RETRY_PERIOD)
         except (ResponseError,
                 requests.exceptions.RequestException,
                 IndexError,
@@ -181,7 +181,6 @@ def main():
                 )
             logger.debug(f'Bot sent message: "{error_message}"')
             last_error_message = error_message
-            time.sleep(RETRY_PERIOD)
         except Exception as error:
             logger.exception(f'Something went wrong: {error}')
             error_message = f'Program failure: {error}'
@@ -192,8 +191,17 @@ def main():
                 )
                 logger.debug(f'Bot sent message: "{error_message}"')
                 last_error_message = error_message
+        finally:
             time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s [%(levelname)s] - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     main()
