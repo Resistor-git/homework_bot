@@ -31,7 +31,7 @@ HOMEWORK_VERDICTS: Dict[str, str] = {
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
 
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 # handler = logging.StreamHandler()
 # formatter = logging.Formatter(
@@ -67,10 +67,11 @@ def send_message(bot, message):
         bot.send_message(
             chat_id=TELEGRAM_CHAT_ID,
             text=message)
-        logger.debug(f'Message "{message}" sent in chat {TELEGRAM_CHAT_ID}')
     except Exception:
         logger.exception("Couldn't send a message in telegram.")
         raise Exception
+    else:
+        logger.debug(f'Message "{message}" sent in chat {TELEGRAM_CHAT_ID}')
 
 
 def get_api_answer(timestamp):
@@ -196,11 +197,12 @@ def main():
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
     formatter = logging.Formatter(
-        '%(asctime)s [%(levelname)s] - %(message)s'
+        '%(asctime)s [%(levelname)s] - %(message)s.\n'
+        'File "%(filename)s" - line %(lineno)d - func "%(funcName)s"'
     )
     handler.setFormatter(formatter)
     logger.addHandler(handler)

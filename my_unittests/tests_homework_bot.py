@@ -51,6 +51,7 @@ class TestHomeworkBot(unittest.TestCase):
         # DO NOT KNOW HOW TO TEST THIS FUNCTION
         # Problem is: test uses the real data from .env, which is inappropriate
         # self.assertIsNone(check_tokens())
+        # создать временную .env и записать в неё значения, а после теста стереть
         pass
 
     def test_check_response_correct(self):
