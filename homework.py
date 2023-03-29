@@ -24,7 +24,7 @@ PRACTICUM_TOKEN: str = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN: str = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID: str = os.getenv('TELEGRAM_CHAT_ID')
 RETRY_PERIOD: int = 600
-ENDPOINT: str = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
+ENDPOINT: str = 'https://practicum.yandex.ru/api/user_api/homework_statuses/1'
 HEADERS: Dict[str, str] = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 HOMEWORK_VERDICTS: Dict[str, str] = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -88,21 +88,18 @@ def get_api_answer(timestamp):
     }
     try:
         response: requests.models.Response = requests.get(**request_args)
-        if response.status_code != HTTPStatus.OK:
-            # logger.exception('Endpoint returned unexpected status code')
-            raise ResponseError(
-                f'Unexpected status code in response: {response.status_code}\n'
-                f'Response: {response.text}'
-                f'Request url: {request_args.get("url")}\n'
-                f'Request headers: {request_args.get("headers")}\n'
-                f'Request params: {request_args.get("params")}'
-            )
-        return response.json()
     except requests.RequestException:
-        # logger.exception('Unexpected answer from API.')
-        raise requests.RequestException(
+        raise ResponseError(
             'Unexpected answer from API.'
         )
+    if response.status_code != HTTPStatus.OK:
+        raise ResponseError(
+            f'Unexpected status code in response: {response.status_code}\n'
+            f'Request url: {request_args.get("url")}\n'
+            f'Request headers: {request_args.get("headers")}\n'
+            f'Request params: {request_args.get("params")}'
+        )
+    return response.json()
 
 
 def check_response(response):
