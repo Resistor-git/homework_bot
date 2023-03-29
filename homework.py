@@ -10,7 +10,7 @@ import time
 import requests
 import logging
 from http import HTTPStatus
-from typing import Dict
+from typing import Dict, Union
 
 import telegram
 from dotenv import load_dotenv
@@ -24,7 +24,7 @@ TELEGRAM_TOKEN: str = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID: str = os.getenv('TELEGRAM_CHAT_ID')
 RETRY_PERIOD: int = 600
 ENDPOINT: str = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
-HEADERS: str = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
+HEADERS: Dict[str, str] = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 HOMEWORK_VERDICTS: Dict[str, str] = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
     'reviewing': 'Работа взята на проверку ревьюером.',
@@ -77,13 +77,13 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """Get info about homeworks since the date in the timestamp."""
     logger.debug('get_api_answer started')
-    date: Dict[str, int] = {'from_date': timestamp}
+    request_args: Dict[str, Union[str, dict]] = {
+        'url': ENDPOINT,
+        'headers': HEADERS,
+        'params': {'from_date': timestamp}
+    }
     try:
-        response: requests.models.Response = requests.get(
-            ENDPOINT,
-            headers=HEADERS,
-            params=date
-        )
+        response: requests.models.Response = requests.get(**request_args)
         if response.status_code != HTTPStatus.OK:
             logger.exception('Endpoint returned unexpected status code')
             raise ResponseError(
