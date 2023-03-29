@@ -7,6 +7,7 @@ status has changed.
 
 import os
 import time
+import sys
 import requests
 import logging
 from http import HTTPStatus
@@ -87,7 +88,11 @@ def get_api_answer(timestamp):
         if response.status_code != HTTPStatus.OK:
             logger.exception('Endpoint returned unexpected status code')
             raise ResponseError(
-                f'Unexpected status code in response: {response.status_code}'
+                f'Unexpected status code in response: {response.status_code}\n'
+                f'Response: {response.text}'
+                f'Request url: {request_args.get("url")}\n'
+                f'Request headers: {request_args.get("headers")}\n'
+                f'Request params: {request_args.get("params")}'
             )
         return response.json()
     except requests.exceptions.RequestException:
