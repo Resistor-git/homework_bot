@@ -70,7 +70,7 @@ def send_message(bot, message):
             chat_id=TELEGRAM_CHAT_ID,
             text=message)
     except Exception:
-        # logger.exception("Couldn't send a message in telegram.")
+        logger.exception("Couldn't send a message in telegram.")
         raise Exception(
             "Couldn't send a message in telegram."
         )
@@ -89,7 +89,7 @@ def get_api_answer(timestamp):
     try:
         response: requests.models.Response = requests.get(**request_args)
         if response.status_code != HTTPStatus.OK:
-            logger.exception('Endpoint returned unexpected status code')
+            # logger.exception('Endpoint returned unexpected status code')
             raise ResponseError(
                 f'Unexpected status code in response: {response.status_code}\n'
                 f'Response: {response.text}'
@@ -98,8 +98,11 @@ def get_api_answer(timestamp):
                 f'Request params: {request_args.get("params")}'
             )
         return response.json()
-    except requests.exceptions.RequestException:
-        logger.exception('Unexpected answer from API.')
+    except requests.RequestException:
+        # logger.exception('Unexpected answer from API.')
+        raise requests.RequestException(
+            'Unexpected answer from API.'
+        )
 
 
 def check_response(response):
@@ -178,7 +181,7 @@ def main():
             else:
                 logger.debug('Homework status did not change')
         except (ResponseError,
-                requests.exceptions.RequestException,
+                requests.RequestException,
                 IndexError,
                 KeyError,
                 TypeError) as error:
