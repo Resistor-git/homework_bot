@@ -57,7 +57,8 @@ def check_tokens():
         if not expected_variables[variable]:
             logger.critical(f'{variable} not found.')
             raise EnvironmentVariableError(
-                f'Environment variable {variable} not found.'
+                f'Environment variable {variable} not found. '
+                'Program stopped.'
             )
 
 
@@ -69,8 +70,10 @@ def send_message(bot, message):
             chat_id=TELEGRAM_CHAT_ID,
             text=message)
     except Exception:
-        logger.exception("Couldn't send a message in telegram.")
-        raise Exception
+        # logger.exception("Couldn't send a message in telegram.")
+        raise Exception(
+            "Couldn't send a message in telegram."
+        )
     else:
         logger.debug(f'Message "{message}" sent in chat {TELEGRAM_CHAT_ID}')
 
@@ -180,6 +183,7 @@ def main():
                 KeyError,
                 TypeError) as error:
             error_message = f'Program failure: {error}'
+            logger.exception(error_message)
             if last_error_message != error_message:
                 bot.send_message(
                     chat_id=TELEGRAM_CHAT_ID,
