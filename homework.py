@@ -16,7 +16,9 @@ from typing import Dict, Union
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import EnvironmentVariableError, ResponseError
+from exceptions import (
+    EnvironmentVariableError, ResponseError, SendMessageError
+)
 
 load_dotenv()
 
@@ -24,7 +26,7 @@ PRACTICUM_TOKEN: str = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN: str = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID: str = os.getenv('TELEGRAM_CHAT_ID')
 RETRY_PERIOD: int = 600
-ENDPOINT: str = 'https://practicum.yandex.ru/api/user_api/homework_statuses/1'
+ENDPOINT: str = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS: Dict[str, str] = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 HOMEWORK_VERDICTS: Dict[str, str] = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -33,13 +35,6 @@ HOMEWORK_VERDICTS: Dict[str, str] = {
 }
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-# handler = logging.StreamHandler()
-# formatter = logging.Formatter(
-#     '%(asctime)s [%(levelname)s] - %(message)s'
-# )
-# handler.setFormatter(formatter)
-# logger.addHandler(handler)
 
 
 def check_tokens():
@@ -69,6 +64,11 @@ def send_message(bot, message):
         bot.send_message(
             chat_id=TELEGRAM_CHAT_ID,
             text=message)
+    except telegram.error.TelegramError:
+        logger.exception('Failed to send a message in telegram')
+        raise SendMessageError(
+            'Failed to send a message in telegram'
+        )
     except Exception:
         logger.exception("Couldn't send a message in telegram.")
         raise Exception(
@@ -89,15 +89,24 @@ def get_api_answer(timestamp):
     try:
         response: requests.models.Response = requests.get(**request_args)
     except requests.RequestException:
+        logger.exception('Unexpected answer from API.')
         raise ResponseError(
             'Unexpected answer from API.'
         )
+    except Exception:
+        logger.exception('Something went wrong during request to API.')
+        raise Exception(
+            'Something went wrong during request to API.'
+        )
     if response.status_code != HTTPStatus.OK:
-        raise ResponseError(
+        logger.exception(
             f'Unexpected status code in response: {response.status_code}\n'
             f'Request url: {request_args.get("url")}\n'
             f'Request headers: {request_args.get("headers")}\n'
             f'Request params: {request_args.get("params")}'
+        )
+        raise ResponseError(
+            'Unexpected status code in response'
         )
     return response.json()
 
@@ -106,26 +115,20 @@ def check_response(response):
     """Ensure that response from Практикум.Домашка has nesessary info."""
     logger.debug('check_response started')
     if not isinstance(response, dict):
-        logger.exception(
-            'Got unexpected response from Практикум.Домашка. '
-            'Response is not dict.'
-        )
+        logger.exception('Response is not dict.')
         raise TypeError(
             'Got unexpected response from Практикум.Домашка. '
             'Response is not dict.'
         )
     elif not ('current_date' and 'homeworks' in response.keys()):
         logger.exception(
-            'No information about current date and homeworks in API response'
+            'No information about current date or homeworks in API response'
         )
         raise ResponseError(
-            'Got unexpected response from Практикум.Домашка'
+            'No information about current date or homeworks in API response'
         )
     elif not isinstance(response['homeworks'], list):
-        logger.exception(
-            'Got unexpected response from Практикум.Домашка. '
-            'Homeworks should be a list.'
-        )
+        logger.exception('Homeworks should be a list.')
         raise TypeError(
             'Got unexpected response from Практикум.Домашка. '
             'Homeworks should be a list.'
@@ -133,7 +136,7 @@ def check_response(response):
     elif len(response['homeworks']) < 1:
         logger.exception('No homeworks found in the API response')
         raise ResponseError(
-            'No homeworks found in response from Практикум.Домашка'
+            'No homeworks found in the API response'
         )
 
 
@@ -166,7 +169,6 @@ def main():
     timestamp: int = int(time.time())
     last_message: str = ''
     last_error_message: str = ''
-
     while True:
         try:
             api_answer = get_api_answer(timestamp)
@@ -178,12 +180,13 @@ def main():
             else:
                 logger.debug('Homework status did not change')
         except (ResponseError,
+                SendMessageError,
+                telegram.error.TelegramError,
                 requests.RequestException,
                 IndexError,
                 KeyError,
                 TypeError) as error:
             error_message = f'Program failure: {error}'
-            logger.exception(error_message)
             if last_error_message != error_message:
                 bot.send_message(
                     chat_id=TELEGRAM_CHAT_ID,
@@ -206,7 +209,6 @@ def main():
 
 
 if __name__ == '__main__':
-    # logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
     formatter = logging.Formatter(

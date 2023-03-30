@@ -7,3 +7,7 @@ class EnvironmentVariableError(Exception):
 
 class ResponseError(Exception):
     """Got unexpected response from Практикум.Домашка."""
+
+
+class SendMessageError(Exception):
+    """Failed to send a message in telegram."""
