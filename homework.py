@@ -17,7 +17,7 @@ import telegram
 from dotenv import load_dotenv
 
 from exceptions import (
-    EnvironmentVariableError, ResponseError, SendMessageError
+    ResponseError, SendMessageError
 )
 
 load_dotenv()
@@ -98,9 +98,9 @@ def get_api_answer(timestamp):
     if response.status_code != HTTPStatus.OK:
         logger.exception(
             f'Unexpected status code in response: {response.status_code}\n'
-            f'Request url: {request_args.get("url")}\n'
-            f'Request headers: {request_args.get("headers")}\n'
-            f'Request params: {request_args.get("params")}'
+            f'  Request url: {request_args.get("url")}\n'
+            f'  Request headers: {request_args.get("headers")}\n'
+            f'  Request params: {request_args.get("params")}'
         )
         raise ResponseError(
             'Unexpected status code in response'
@@ -164,43 +164,34 @@ def main():
     check_tokens()
     bot: telegram.Bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp: int = int(time.time())
-    last_message: str = ''
-    last_error_message: str = ''
+    current_report = {
+        'homework': None,
+        'message': None,
+    }
+    previous_report = {
+        'homework': None,
+        'message': None,
+    }
     while True:
         try:
             api_answer = get_api_answer(timestamp)
             check_response(api_answer)
-            message = parse_status(api_answer['homeworks'][0])
-            if message != last_message:
+            current_report['homework'] = api_answer
+            current_report['message'] = parse_status(
+                api_answer['homeworks'][0]
+            )
+            message = current_report['message']
+            if current_report != previous_report:
                 send_message(bot, message)
-                last_message = message
+                previous_report = current_report.copy()
             else:
                 logger.debug('Homework status did not change')
-        except (ResponseError,
-                SendMessageError,
-                telegram.error.TelegramError,
-                requests.RequestException,
-                IndexError,
-                KeyError,
-                TypeError) as error:
-            error_message = f'Program failure: {error}'
-            if last_error_message != error_message:
-                bot.send_message(
-                    chat_id=TELEGRAM_CHAT_ID,
-                    text=error_message
-                )
-            logger.debug(f'Bot sent message: "{error_message}"')
-            last_error_message = error_message
         except Exception as error:
-            logger.exception(f'Something went wrong: {error}')
             error_message = f'Program failure: {error}'
-            if last_error_message != error_message:
-                bot.send_message(
-                    chat_id=TELEGRAM_CHAT_ID,
-                    text=error_message
-                )
-                logger.debug(f'Bot sent message: "{error_message}"')
-                last_error_message = error_message
+            current_report['message'] = error_message
+            if previous_report != current_report:
+                send_message(bot, error_message)
+                previous_report = current_report.copy()
         finally:
             time.sleep(RETRY_PERIOD)
 
@@ -210,7 +201,7 @@ if __name__ == '__main__':
     handler = logging.StreamHandler()
     formatter = logging.Formatter(
         '%(asctime)s [%(levelname)s] - %(message)s.\n'
-        'File "%(filename)s" - line %(lineno)d - func "%(funcName)s"'
+        'File "%(filename)s" - line %(lineno)d - func "%(funcName)s"\n'
     )
     handler.setFormatter(formatter)
     logger.addHandler(handler)
