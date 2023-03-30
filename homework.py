@@ -50,11 +50,8 @@ def check_tokens():
         'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID}
     for variable in expected_variables:
         if not expected_variables[variable]:
-            logger.critical(f'{variable} not found.')
-            raise EnvironmentVariableError(
-                f'Environment variable {variable} not found. '
-                'Program stopped.'
-            )
+            logger.critical(f'{variable} not found. Program stopped')
+            sys.exit()
 
 
 def send_message(bot, message):
