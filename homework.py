@@ -181,7 +181,9 @@ def main():
                 api_answer['homeworks'][0]
             )
             message = current_report['message']
-            if current_report != previous_report:
+            if current_report['message'] != previous_report['message']:
+                logger.debug(f'current_report: {current_report}\n'
+                             f'previous_report: {previous_report}')
                 send_message(bot, message)
                 previous_report = current_report.copy()
             else:
