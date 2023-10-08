@@ -1,2 +1,5 @@
 # homework_bot
-python telegram bot
+Telegram-бот для работы с API Я.Практикума. Проверяет статус код-ревью и отправляет сообщение в случае его изменения.
+
+# Стэк
+- python-telegram-bot
